@@ -1,81 +1,69 @@
 // useCallback: custom hooks
-// 💯 use useCallback to empower the user to customize memoization
-// http://localhost:3000/isolated/final/02.extra-1.js
+// http://localhost:3000/isolated/exercise/02.js
 
-import * as React from 'react';
+import * as React from 'react'
 import {
   fetchPokemon,
-
+  PokemonForm,
   PokemonDataView,
-
-  PokemonErrorBoundary, PokemonForm,
-
-  PokemonInfoFallback
-} from '../pokemon';
+  PokemonInfoFallback,
+  PokemonErrorBoundary,
+} from '../pokemon'
 
 function asyncReducer(state, action) {
-  switch (action.type) {
+  const {type, data, error} = action
+  switch (type) {
+    case 'idle': {
+      return {...state, data: null, status: 'idle', error: null}
+    }
     case 'pending': {
-      return {status: 'pending', data: null, error: null}
+      return {...state, data: null, status: 'pending', error: null}
     }
     case 'resolved': {
-      return {status: 'resolved', data: action.data, error: null}
+      return {...state, data, status: 'resolved', error: null}
     }
     case 'rejected': {
-      return {status: 'rejected', data: null, error: action.error}
+      return {...state, data: null, status: 'rejected', error}
     }
-    default: {
-      throw new Error(`Unhandled action type: ${action.type}`)
-    }
+    default:
+      throw new Error(`Unhandled action type:${type}`)
   }
 }
 
 function useAsync(asyncCallback, initialState) {
-  const [state, dispatch] = React.useReducer(asyncReducer, {
-    status: 'idle',
-    data: null,
-    error: null,
-    ...initialState,
-  })
+  const [state, dispatch] = React.useReducer(asyncReducer, initialState)
   React.useEffect(() => {
     const promise = asyncCallback()
-    if (!promise) {
-      return
-    }
+    if (!promise) return
     dispatch({type: 'pending'})
     promise.then(
-      data => {
-        dispatch({type: 'resolved', data})
-      },
-      error => {
-        dispatch({type: 'rejected', error})
-      },
+      data => dispatch({type: 'resolved', data}),
+      error => dispatch({type: 'rejected', error}),
     )
   }, [asyncCallback])
   return state
 }
 
 function PokemonInfo({pokemonName}) {
-  const asyncCallback = React.useCallback(() => {
-    if (!pokemonName) {
-      return
-    }
-    return fetchPokemon(pokemonName)
-  }, [pokemonName])
+  const cb = React.useCallback(
+    () => (pokemonName ? fetchPokemon(pokemonName) : null),
+    [pokemonName],
+  )
 
-  const state = useAsync(asyncCallback, {
+  const {data, status, error} = useAsync(cb, {
     status: pokemonName ? 'pending' : 'idle',
+    data: null,
+    error: null,
   })
-  const {data: pokemon, status, error} = state
 
-  if (status === 'idle') {
+  if (status === 'idle' || !pokemonName) {
     return 'Submit a pokemon'
   } else if (status === 'pending') {
     return <PokemonInfoFallback name={pokemonName} />
   } else if (status === 'rejected') {
     throw error
   } else if (status === 'resolved') {
-    return <PokemonDataView pokemon={pokemon} />
+    return <PokemonDataView pokemon={data} />
   }
 
   throw new Error('This should be impossible')
@@ -83,14 +71,8 @@ function PokemonInfo({pokemonName}) {
 
 function App() {
   const [pokemonName, setPokemonName] = React.useState('')
-
-  function handleSubmit(newPokemonName) {
-    setPokemonName(newPokemonName)
-  }
-
-  function handleReset() {
-    setPokemonName('')
-  }
+  const handleSubmit = newPokemonName => setPokemonName(newPokemonName)
+  const handleReset = () => setPokemonName('')
 
   return (
     <div className="pokemon-info-app">
