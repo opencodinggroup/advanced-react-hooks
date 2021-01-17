@@ -2,14 +2,16 @@
 // 💯 use useCallback to empower the user to customize memoization
 // http://localhost:3000/isolated/final/02.extra-1.js
 
-import * as React from 'react'
+import * as React from 'react';
 import {
   fetchPokemon,
-  PokemonForm,
+
   PokemonDataView,
-  PokemonInfoFallback,
-  PokemonErrorBoundary,
-} from '../pokemon'
+
+  PokemonErrorBoundary, PokemonForm,
+
+  PokemonInfoFallback
+} from '../pokemon';
 
 function asyncReducer(state, action) {
   switch (action.type) {
